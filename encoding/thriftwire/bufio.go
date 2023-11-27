@@ -3,7 +3,6 @@ package thriftwire
 import (
 	"bufio"
 	"io"
-	"slices"
 	"strings"
 )
 
@@ -28,7 +27,6 @@ func ReadString(b *bufio.Reader, n int) (string, error) {
 		return string(c), err
 	}
 	var sb strings.Builder
-	sb.Grow(b.Size())
 	left := n
 	for left > 0 {
 		c, err := Next(b, min(left, b.Size()))
@@ -51,7 +49,6 @@ func ReadBytes(b *bufio.Reader, n int, buf []byte) ([]byte, error) {
 		c, err := Next(b, n)
 		return append(buf, c...), err
 	}
-	buf = slices.Grow(buf, b.Size())
 	left := n
 	for left > 0 {
 		c, err := Next(b, min(left, b.Size()))
