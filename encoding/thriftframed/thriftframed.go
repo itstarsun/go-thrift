@@ -133,8 +133,7 @@ func (x *writer) writeUint32(v uint32) error {
 }
 
 func (x *writer) Flush() error {
-	// Note that we only write when WriteMessageEnd is called.
-	return nil
+	return thriftwire.Flush(x.w)
 }
 
 func (x *writer) Reset(w io.Writer) {
