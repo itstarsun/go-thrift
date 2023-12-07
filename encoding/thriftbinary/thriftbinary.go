@@ -59,8 +59,8 @@ func newReader(r io.Reader, strict bool) *reader {
 	return &reader{Reader: bufio.NewReader(r), strict: strict}
 }
 
-func (r *reader) ReadMessageBegin() (h thriftwire.MessageHeader, err error) {
-	n, err := r.readSize()
+func (x *reader) ReadMessageBegin() (h thriftwire.MessageHeader, err error) {
+	n, err := x.readSize()
 	if err != nil {
 		return h, err
 	}
@@ -70,327 +70,340 @@ func (r *reader) ReadMessageBegin() (h thriftwire.MessageHeader, err error) {
 			return h, fmt.Errorf("thriftbinary: bad version %x", version)
 		}
 		h.Type = thriftwire.MessageType(n)
-		h.Name, err = r.ReadString()
+		h.Name, err = x.ReadString()
 		if err != nil {
 			return h, err
 		}
-		h.ID, err = r.ReadI32()
+		h.ID, err = x.ReadI32()
 		return h, err
-	} else if r.strict {
+	} else if x.strict {
 		return h, fmt.Errorf("thriftbinary: missing version")
 	}
-	h.Name, err = thriftwire.ReadString(r.Reader, n)
+	h.Name, err = thriftwire.ReadString(x.Reader, n)
 	if err != nil {
 		return h, err
 	}
-	t, err := r.ReadByte()
-	h.Type = thriftwire.MessageType(t)
+	h.Type, err = x.readMessageType()
 	if err != nil {
 		return h, err
 	}
-	h.ID, err = r.ReadI32()
+	h.ID, err = x.ReadI32()
 	return h, err
 }
 
-func (r *reader) ReadMessageEnd() error {
+func (x *reader) ReadMessageEnd() error {
 	return nil
 }
 
-func (r *reader) ReadStructBegin() (h thriftwire.StructHeader, err error) {
+func (x *reader) ReadStructBegin() (h thriftwire.StructHeader, err error) {
 	return h, nil
 }
 
-func (r *reader) ReadStructEnd() error {
+func (x *reader) ReadStructEnd() error {
 	return nil
 }
 
-func (r *reader) ReadFieldBegin() (h thriftwire.FieldHeader, err error) {
-	t, err := r.ReadByte()
-	h.Type = thriftwire.Type(t)
+func (x *reader) ReadFieldBegin() (h thriftwire.FieldHeader, err error) {
+	h.Type, err = x.readType()
 	if err != nil || h.Type == thriftwire.Stop {
 		return h, err
 	}
-	h.ID, err = r.ReadI16()
+	h.ID, err = x.ReadI16()
 	return h, err
 }
 
-func (r *reader) ReadFieldEnd() error {
+func (x *reader) ReadFieldEnd() error {
 	return nil
 }
 
-func (r *reader) ReadMapBegin() (h thriftwire.MapHeader, err error) {
-	k, err := r.ReadByte()
-	h.Key = thriftwire.Type(k)
+func (x *reader) ReadMapBegin() (h thriftwire.MapHeader, err error) {
+	h.Key, err = x.readType()
 	if err != nil {
 		return h, err
 	}
-	v, err := r.ReadByte()
-	h.Value = thriftwire.Type(v)
+	h.Value, err = x.readType()
 	if err != nil {
 		return h, err
 	}
-	h.Size, err = r.readSize()
+	h.Size, err = x.readSize()
 	return h, err
 }
 
-func (r *reader) ReadMapEnd() error {
+func (x *reader) ReadMapEnd() error {
 	return nil
 }
 
-func (r *reader) ReadSetBegin() (h thriftwire.SetHeader, err error) {
-	e, err := r.ReadByte()
-	h.Element = thriftwire.Type(e)
+func (x *reader) ReadSetBegin() (h thriftwire.SetHeader, err error) {
+	h.Element, err = x.readType()
 	if err != nil {
 		return h, err
 	}
-	h.Size, err = r.readSize()
+	h.Size, err = x.readSize()
 	return h, err
 }
 
-func (r *reader) ReadSetEnd() error {
+func (x *reader) ReadSetEnd() error {
 	return nil
 }
 
-func (r *reader) ReadListBegin() (thriftwire.ListHeader, error) {
-	sh, err := r.ReadSetBegin()
+func (x *reader) ReadListBegin() (thriftwire.ListHeader, error) {
+	sh, err := x.ReadSetBegin()
 	return thriftwire.ListHeader(sh), err
 }
 
-func (r *reader) ReadListEnd() error {
+func (x *reader) ReadListEnd() error {
 	return nil
 }
 
-func (r *reader) ReadBool() (bool, error) {
-	v, err := r.ReadByte()
+func (x *reader) ReadBool() (bool, error) {
+	v, err := x.ReadByte()
 	return v != 0, err
 }
 
-func (r *reader) ReadDouble() (float64, error) {
-	buf, err := thriftwire.Next(r.Reader, 8)
+func (x *reader) ReadDouble() (float64, error) {
+	buf, err := thriftwire.Next(x.Reader, 8)
 	if err != nil {
 		return 0, err
 	}
 	return math.Float64frombits(binary.BigEndian.Uint64(buf)), nil
 }
 
-func (r *reader) ReadI16() (int16, error) {
-	buf, err := thriftwire.Next(r.Reader, 2)
+func (x *reader) ReadI16() (int16, error) {
+	buf, err := thriftwire.Next(x.Reader, 2)
 	if err != nil {
 		return 0, err
 	}
 	return int16(binary.BigEndian.Uint16(buf)), nil
 }
 
-func (r *reader) ReadI32() (int32, error) {
-	buf, err := thriftwire.Next(r.Reader, 4)
+func (x *reader) ReadI32() (int32, error) {
+	buf, err := thriftwire.Next(x.Reader, 4)
 	if err != nil {
 		return 0, err
 	}
 	return int32(binary.BigEndian.Uint32(buf)), nil
 }
 
-func (r *reader) ReadI64() (int64, error) {
-	buf, err := thriftwire.Next(r.Reader, 8)
+func (x *reader) ReadI64() (int64, error) {
+	buf, err := thriftwire.Next(x.Reader, 8)
 	if err != nil {
 		return 0, err
 	}
 	return int64(binary.BigEndian.Uint64(buf)), nil
 }
 
-func (r *reader) ReadString() (string, error) {
-	n, err := r.readSize()
+func (x *reader) ReadString() (string, error) {
+	n, err := x.readSize()
 	if err != nil {
 		return "", err
 	}
-	return thriftwire.ReadString(r.Reader, n)
+	return thriftwire.ReadString(x.Reader, n)
 }
 
-func (r *reader) ReadBytes(buf []byte) ([]byte, error) {
-	n, err := r.readSize()
+func (x *reader) ReadBytes(buf []byte) ([]byte, error) {
+	n, err := x.readSize()
 	if err != nil {
 		return buf, err
 	}
-	return thriftwire.ReadBytes(r.Reader, n, buf)
+	return thriftwire.ReadBytes(x.Reader, n, buf)
 }
 
-func (r *reader) ReadUUID(v *[16]byte) error {
-	_, err := io.ReadFull(r.Reader, v[:])
+func (x *reader) ReadUUID(v *[16]byte) error {
+	_, err := io.ReadFull(x.Reader, v[:])
 	return err
 }
 
-func (r *reader) SkipString() error {
-	n, err := r.readSize()
+func (x *reader) SkipString() error {
+	n, err := x.readSize()
 	if err != nil {
 		return err
 	}
-	_, err = r.Discard(n)
+	_, err = x.Discard(n)
 	return err
 }
 
-func (r *reader) SkipUUID() error {
-	_, err := r.Discard(16)
+func (x *reader) SkipUUID() error {
+	_, err := x.Discard(16)
 	return err
 }
 
-func (r *reader) readSize() (int, error) {
-	v, err := r.ReadI32()
+func (x *reader) readMessageType() (thriftwire.MessageType, error) {
+	v, err := x.ReadByte()
+	return thriftwire.MessageType(v), err
+}
+
+func (x *reader) readType() (thriftwire.Type, error) {
+	v, err := x.ReadByte()
+	return thriftwire.Type(v), err
+}
+
+func (x *reader) readSize() (int, error) {
+	v, err := x.ReadI32()
 	return int(v), err
 }
 
 type writer struct {
 	*bufio.Writer
-	uw     io.Writer
+	w      io.Writer
 	buf    [8]byte
 	strict bool
 }
 
 func newWriter(w io.Writer, strict bool) thriftwire.Writer {
-	return &writer{Writer: bufio.NewWriter(w), uw: w, strict: strict}
+	return &writer{Writer: bufio.NewWriter(w), w: w, strict: strict}
 }
 
-func (w *writer) WriteMessageBegin(h thriftwire.MessageHeader) error {
-	if w.strict {
-		if err := w.WriteI32(int32(uint32(h.Type) | version1)); err != nil {
+func (x *writer) WriteMessageBegin(h thriftwire.MessageHeader) error {
+	if x.strict {
+		if err := x.WriteI32(int32(uint32(h.Type) | version1)); err != nil {
 			return err
 		}
-		if err := w.WriteString(h.Name); err != nil {
+		if err := x.WriteString(h.Name); err != nil {
 			return err
 		}
-		return w.WriteI32(h.ID)
+		return x.WriteI32(h.ID)
 	}
-	if err := w.WriteString(h.Name); err != nil {
+	if err := x.WriteString(h.Name); err != nil {
 		return err
 	}
-	if err := w.WriteByte(byte(h.Type)); err != nil {
+	if err := x.writeMessageType(h.Type); err != nil {
 		return err
 	}
-	return w.WriteI32(h.ID)
+	return x.WriteI32(h.ID)
 }
 
-func (w *writer) WriteMessageEnd() error {
+func (x *writer) WriteMessageEnd() error {
 	return nil
 }
 
-func (w *writer) WriteStructBegin(h thriftwire.StructHeader) error {
+func (x *writer) WriteStructBegin(h thriftwire.StructHeader) error {
 	return nil
 }
 
-func (w *writer) WriteStructEnd() error {
-	return w.WriteByte(byte(thriftwire.Stop))
+func (x *writer) WriteStructEnd() error {
+	return x.writeType(thriftwire.Stop)
 }
 
-func (w *writer) WriteFieldBegin(h thriftwire.FieldHeader) error {
-	if err := w.WriteByte(byte(h.Type)); err != nil {
+func (x *writer) WriteFieldBegin(h thriftwire.FieldHeader) error {
+	if err := x.writeType(h.Type); err != nil {
 		return err
 	}
-	return w.WriteI16(h.ID)
+	return x.WriteI16(h.ID)
 }
 
-func (w *writer) WriteFieldEnd() error {
+func (x *writer) WriteFieldEnd() error {
 	return nil
 }
 
-func (w *writer) WriteMapBegin(h thriftwire.MapHeader) error {
-	if err := w.WriteByte(byte(h.Key)); err != nil {
+func (x *writer) WriteMapBegin(h thriftwire.MapHeader) error {
+	if err := x.writeType(h.Key); err != nil {
 		return err
 	}
-	if err := w.WriteByte(byte(h.Value)); err != nil {
+	if err := x.writeType(h.Value); err != nil {
 		return err
 	}
-	return w.WriteByte(byte(h.Size))
+	return x.writeSize(h.Size)
 }
 
-func (w *writer) WriteMapEnd() error {
+func (x *writer) WriteMapEnd() error {
 	return nil
 }
 
-func (w *writer) WriteSetBegin(h thriftwire.SetHeader) error {
-	if err := w.WriteByte(byte(h.Element)); err != nil {
+func (x *writer) WriteSetBegin(h thriftwire.SetHeader) error {
+	if err := x.writeType(h.Element); err != nil {
 		return err
 	}
-	return w.WriteByte(byte(h.Size))
+	return x.writeSize(h.Size)
 }
 
-func (w *writer) WriteSetEnd() error {
+func (x *writer) WriteSetEnd() error {
 	return nil
 }
 
-func (w *writer) WriteListBegin(h thriftwire.ListHeader) error {
-	return w.WriteSetBegin(thriftwire.SetHeader(h))
+func (x *writer) WriteListBegin(h thriftwire.ListHeader) error {
+	return x.WriteSetBegin(thriftwire.SetHeader(h))
 }
 
-func (w *writer) WriteListEnd() error {
+func (x *writer) WriteListEnd() error {
 	return nil
 }
 
-func (w *writer) WriteBool(v bool) error {
+func (x *writer) WriteBool(v bool) error {
 	if v {
-		return w.WriteByte(1)
+		return x.WriteByte(1)
 	}
-	return w.WriteByte(0)
+	return x.WriteByte(0)
 }
 
-func (w *writer) WriteDouble(v float64) error {
-	buf := w.buf[:8]
+func (x *writer) WriteDouble(v float64) error {
+	buf := x.buf[:8]
 	binary.BigEndian.PutUint64(buf, math.Float64bits(v))
-	_, err := w.Write(buf)
+	_, err := x.Write(buf)
 	return err
 }
 
-func (w *writer) WriteI16(v int16) error {
-	buf := w.buf[:2]
+func (x *writer) WriteI16(v int16) error {
+	buf := x.buf[:2]
 	binary.BigEndian.PutUint16(buf, uint16(v))
-	_, err := w.Write(buf)
+	_, err := x.Write(buf)
 	return err
 }
 
-func (w *writer) WriteI32(v int32) error {
-	buf := w.buf[:4]
+func (x *writer) WriteI32(v int32) error {
+	buf := x.buf[:4]
 	binary.BigEndian.PutUint32(buf, uint32(v))
-	_, err := w.Write(buf)
+	_, err := x.Write(buf)
 	return err
 }
 
-func (w *writer) WriteI64(v int64) error {
-	buf := w.buf[:8]
+func (x *writer) WriteI64(v int64) error {
+	buf := x.buf[:8]
 	binary.BigEndian.PutUint64(buf, uint64(v))
-	_, err := w.Write(buf)
+	_, err := x.Write(buf)
 	return err
 }
 
-func (w *writer) WriteString(v string) error {
-	if err := w.writeSize(len(v)); err != nil {
+func (x *writer) WriteString(v string) error {
+	if err := x.writeSize(len(v)); err != nil {
 		return err
 	}
-	_, err := w.Writer.WriteString(v)
+	_, err := x.Writer.WriteString(v)
 	return err
 }
 
-func (w *writer) WriteBytes(v []byte) error {
-	if err := w.writeSize(len(v)); err != nil {
+func (x *writer) WriteBytes(v []byte) error {
+	if err := x.writeSize(len(v)); err != nil {
 		return err
 	}
-	_, err := w.Write(v)
+	_, err := x.Write(v)
 	return err
 }
 
-func (w *writer) WriteUUID(v *[16]byte) error {
-	_, err := w.Write(v[:])
+func (x *writer) WriteUUID(v *[16]byte) error {
+	_, err := x.Write(v[:])
 	return err
 }
 
-func (w *writer) writeSize(v int) error {
-	return w.WriteI32(int32(v))
-}
-
-func (w *writer) Flush() error {
-	if err := w.Writer.Flush(); err != nil {
+func (x *writer) Flush() error {
+	if err := x.Writer.Flush(); err != nil {
 		return err
 	}
-	return thriftwire.Flush(w.uw)
+	return thriftwire.Flush(x.w)
 }
 
-func (w *writer) Reset(uw io.Writer) {
-	w.Writer.Reset(uw)
-	w.uw = uw
+func (x *writer) Reset(w io.Writer) {
+	x.Writer.Reset(w)
+	x.w = w
+}
+
+func (x *writer) writeMessageType(t thriftwire.MessageType) error {
+	return x.WriteByte(byte(t))
+}
+
+func (x *writer) writeType(t thriftwire.Type) error {
+	return x.WriteByte(byte(t))
+}
+
+func (x *writer) writeSize(v int) error {
+	return x.WriteI32(int32(v))
 }
