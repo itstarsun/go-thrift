@@ -261,11 +261,10 @@ func (w *writer) WriteMessageBegin(h thriftwire.MessageHeader) error {
 	if err := w.WriteString(h.Name); err != nil {
 		return err
 	}
-	buf := w.buf[:5]
-	buf[0] = byte(h.Type)
-	binary.BigEndian.PutUint32(buf[1:5], uint32(h.ID))
-	_, err := w.Write(buf)
-	return err
+	if err := w.WriteByte(byte(h.Type)); err != nil {
+		return err
+	}
+	return w.WriteI32(h.ID)
 }
 
 func (w *writer) WriteMessageEnd() error {
@@ -281,11 +280,10 @@ func (w *writer) WriteStructEnd() error {
 }
 
 func (w *writer) WriteFieldBegin(h thriftwire.FieldHeader) error {
-	buf := w.buf[:3]
-	buf[0] = byte(h.Type)
-	binary.BigEndian.PutUint16(buf[1:3], uint16(h.ID))
-	_, err := w.Write(buf)
-	return err
+	if err := w.WriteByte(byte(h.Type)); err != nil {
+		return err
+	}
+	return w.WriteI16(h.ID)
 }
 
 func (w *writer) WriteFieldEnd() error {
@@ -293,12 +291,13 @@ func (w *writer) WriteFieldEnd() error {
 }
 
 func (w *writer) WriteMapBegin(h thriftwire.MapHeader) error {
-	buf := w.buf[:6]
-	buf[0] = byte(h.Key)
-	buf[1] = byte(h.Value)
-	binary.BigEndian.PutUint32(buf[2:6], uint32(h.Value))
-	_, err := w.Write(buf)
-	return err
+	if err := w.WriteByte(byte(h.Key)); err != nil {
+		return err
+	}
+	if err := w.WriteByte(byte(h.Value)); err != nil {
+		return err
+	}
+	return w.WriteByte(byte(h.Size))
 }
 
 func (w *writer) WriteMapEnd() error {
@@ -306,11 +305,10 @@ func (w *writer) WriteMapEnd() error {
 }
 
 func (w *writer) WriteSetBegin(h thriftwire.SetHeader) error {
-	buf := w.buf[:5]
-	buf[0] = byte(h.Element)
-	binary.BigEndian.PutUint32(buf[1:5], uint32(h.Element))
-	_, err := w.Write(buf)
-	return err
+	if err := w.WriteByte(byte(h.Element)); err != nil {
+		return err
+	}
+	return w.WriteByte(byte(h.Size))
 }
 
 func (w *writer) WriteSetEnd() error {
