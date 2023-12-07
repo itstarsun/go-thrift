@@ -17,7 +17,7 @@ import (
 func main() {
 	var g generator
 	g.generate()
-	err := os.WriteFile("zmemo.go", g.format(), 0666)
+	err := os.WriteFile("zmemo.go", g.format(), 0o666)
 	if err != nil {
 		log.Fatal(err)
 	}
