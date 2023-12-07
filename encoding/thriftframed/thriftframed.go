@@ -22,15 +22,15 @@ type protocol struct {
 
 func (p protocol) NewReader(r io.Reader) thriftwire.Reader {
 	var x reader
-	x.Reader = p.Protocol.NewReader(&x.msg)
-	x.lr.R = r
+	x.Reader = p.Protocol.NewReader(nil)
+	x.Reset(r)
 	return &x
 }
 
 func (p protocol) NewWriter(w io.Writer) thriftwire.Writer {
 	var x writer
-	x.Writer = p.Protocol.NewWriter(&x.msg)
-	x.w = w
+	x.Writer = p.Protocol.NewWriter(nil)
+	x.Reset(w)
 	return &x
 }
 
@@ -60,7 +60,7 @@ func (x *reader) ReadMessageEnd() error {
 		return err
 	}
 	if x.msg.Len() > 0 {
-		return fmt.Errorf("thriftframed: the underlying Reader does not fully consumed the message")
+		return fmt.Errorf("thriftframed: the underlying reader does not fully consumed the message")
 	}
 	return nil
 }
