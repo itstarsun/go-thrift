@@ -112,6 +112,9 @@ func (x *writer) WriteMessageEnd() error {
 	if err := x.Writer.WriteMessageEnd(); err != nil {
 		return err
 	}
+	if err := x.Writer.Flush(); err != nil {
+		return err
+	}
 	return x.writeMessage()
 }
 
@@ -119,7 +122,7 @@ func (x *writer) writeMessage() error {
 	if err := x.writeUint32(uint32(x.msg.Len())); err != nil {
 		return err
 	}
-	if _, err := x.msg.WriteTo(&x.msg); err != nil {
+	if _, err := x.msg.WriteTo(x.w); err != nil {
 		return err
 	}
 	return nil
