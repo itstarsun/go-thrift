@@ -130,6 +130,23 @@ func TestProtocol(t *testing.T, p thriftwire.Protocol, opts ProtocolOptions) {
 				},
 			},
 		},
+	}, {
+		name: "LargeMapSetListOfBools",
+		in: struct {
+			Map  map[string]bool   `thrift:"0"`
+			Set  thrift.Set[bool]  `thrift:"32"`
+			List thrift.List[bool] `thrift:"64"`
+		}{
+			Map: func() map[string]bool {
+				m := make(map[string]bool, 'Z'-'A'+1)
+				for c := 'A'; c <= 'Z'; c++ {
+					m[string(c)] = true
+				}
+				return m
+			}(),
+			Set:  make(thrift.Set[bool], 64),
+			List: make(thrift.List[bool], 64),
+		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.uuid && !opts.UUID {
