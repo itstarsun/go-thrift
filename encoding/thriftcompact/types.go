@@ -32,6 +32,11 @@ func (e invalidCompactTypeError) Error() string {
 
 func typeCompact(t thriftwire.Type) (compactType, error) {
 	switch t {
+	case thriftwire.Bool:
+		// Bools are encoded as 2 in lists, sets, and maps.
+		// See https://github.com/apache/thrift/blob/master/doc/specs/thrift-compact-protocol.md#list-and-set
+		// for details.
+		return _BOOLEAN_FALSE, nil
 	case thriftwire.Byte:
 		return _I8, nil
 	case thriftwire.I16:
