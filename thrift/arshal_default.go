@@ -319,6 +319,12 @@ func makeStructArshaler(t reflect.Type) *arshaler {
 		return nil
 	}
 	fncs.unmarshal = func(r thriftwire.Reader, va addressableValue, uo unmarshalOptions, wt thriftwire.Type) error {
+		once.Do(init)
+		if errInit != nil {
+			err := *errInit // shallow copy SemanticError
+			err.action = "unmarshal"
+			return &err
+		}
 		if wt != thriftwire.Struct {
 			return &SemanticError{action: "unmarshal", ThriftType: wt, GoType: t}
 		}
