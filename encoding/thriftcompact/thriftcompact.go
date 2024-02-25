@@ -130,12 +130,18 @@ func (x *reader) ReadFieldEnd() error {
 	return nil
 }
 
-func (x *reader) ReadMapBegin() (h thriftwire.MapHeader, err error) {
-	h.Size, err = x.readSize()
+func readSize(b *bufio.Reader) (int, error) {
+	v, err := binary.ReadUvarint(b)
+	return int(v), err
+}
+
+// ReadMapHeader reads a map header from b.
+func ReadMapHeader(b *bufio.Reader) (h thriftwire.MapHeader, err error) {
+	h.Size, err = readSize(b)
 	if err != nil || h.Size == 0 {
 		return h, err
 	}
-	kv, err := x.ReadByte()
+	kv, err := b.ReadByte()
 	if err != nil {
 		return h, err
 	}
@@ -150,12 +156,17 @@ func (x *reader) ReadMapBegin() (h thriftwire.MapHeader, err error) {
 	return h, nil
 }
 
+func (x *reader) ReadMapBegin() (thriftwire.MapHeader, error) {
+	return ReadMapHeader(x.Reader)
+}
+
 func (x *reader) ReadMapEnd() error {
 	return nil
 }
 
-func (x *reader) ReadSetBegin() (h thriftwire.SetHeader, err error) {
-	st, err := x.ReadByte()
+// ReadSetHeader reads a set header from b.
+func ReadSetHeader(b *bufio.Reader) (h thriftwire.SetHeader, err error) {
+	st, err := b.ReadByte()
 	if err != nil {
 		return h, err
 	}
@@ -165,7 +176,7 @@ func (x *reader) ReadSetBegin() (h thriftwire.SetHeader, err error) {
 	}
 	h.Size = int(st >> 4)
 	if h.Size == 15 {
-		h.Size, err = x.readSize()
+		h.Size, err = readSize(b)
 		if err != nil {
 			return h, err
 		}
@@ -173,13 +184,22 @@ func (x *reader) ReadSetBegin() (h thriftwire.SetHeader, err error) {
 	return h, nil
 }
 
+func (x *reader) ReadSetBegin() (thriftwire.SetHeader, error) {
+	return ReadSetHeader(x.Reader)
+}
+
 func (x *reader) ReadSetEnd() error {
 	return nil
 }
 
-func (x *reader) ReadListBegin() (thriftwire.ListHeader, error) {
-	sh, err := x.ReadSetBegin()
+// ReadListHeader reads a list header from b.
+func ReadListHeader(b *bufio.Reader) (h thriftwire.ListHeader, err error) {
+	sh, err := ReadSetHeader(b)
 	return thriftwire.ListHeader(sh), err
+}
+
+func (x *reader) ReadListBegin() (thriftwire.ListHeader, error) {
+	return ReadListHeader(x.Reader)
 }
 
 func (x *reader) ReadListEnd() error {
