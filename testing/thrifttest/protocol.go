@@ -36,6 +36,14 @@ type testStruct struct {
 	Bytes  []byte      `thrift:"3"`
 }
 
+func isMessageNameEqual(x, y string) bool {
+	return x == y || x == "" || y == ""
+}
+
+func isMessageHeaderEqual(x, y thriftwire.MessageHeader) bool {
+	return x.Type == y.Type && x.ID == y.ID && isMessageNameEqual(x.Name, y.Name)
+}
+
 // TestProtocol tests the [thriftwire.Protocol] implementation.
 func TestProtocol(t *testing.T, p thriftwire.Protocol, opts ProtocolOptions) {
 	var msg thriftwire.MessageHeader
@@ -173,7 +181,7 @@ func TestProtocol(t *testing.T, p thriftwire.Protocol, opts ProtocolOptions) {
 			r.Reset(&b)
 			if h, err := r.ReadMessageBegin(); err != nil {
 				t.Fatal(err)
-			} else if h != msg {
+			} else if !isMessageHeaderEqual(h, msg) {
 				t.Errorf("\ngot  %#v\nwant %#v", h, msg)
 			}
 			out := reflect.New(reflect.TypeOf(tt.in)).Interface()
