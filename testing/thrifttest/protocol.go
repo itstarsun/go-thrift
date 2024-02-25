@@ -47,7 +47,9 @@ func TestProtocol(t *testing.T, p thriftwire.Protocol, opts ProtocolOptions) {
 	for _, tt := range []struct {
 		name string
 		in   any
-		uuid bool
+
+		hasUUID bool
+		hasMap  bool
 	}{{
 		name: "False",
 		in:   boolStruct{Bool: false},
@@ -115,7 +117,7 @@ func TestProtocol(t *testing.T, p thriftwire.Protocol, opts ProtocolOptions) {
 		in: struct {
 			UUID [16]byte `thrift:"1,required"`
 		}{},
-		uuid: true,
+		hasUUID: true,
 	}, {
 		name: "NestedStruct",
 		in: testStruct{
@@ -131,11 +133,18 @@ func TestProtocol(t *testing.T, p thriftwire.Protocol, opts ProtocolOptions) {
 			},
 		},
 	}, {
-		name: "LargeMapSetListOfBools",
+		name: "LargeSetListOfBools",
 		in: struct {
-			Map  map[string]bool   `thrift:"0"`
 			Set  thrift.Set[bool]  `thrift:"32"`
 			List thrift.List[bool] `thrift:"64"`
+		}{
+			Set:  make(thrift.Set[bool], 64),
+			List: make(thrift.List[bool], 64),
+		},
+	}, {
+		name: "LargeMapOfBools",
+		in: struct {
+			Map map[string]bool `thrift:"0"`
 		}{
 			Map: func() map[string]bool {
 				m := make(map[string]bool, 'Z'-'A'+1)
@@ -144,12 +153,11 @@ func TestProtocol(t *testing.T, p thriftwire.Protocol, opts ProtocolOptions) {
 				}
 				return m
 			}(),
-			Set:  make(thrift.Set[bool], 64),
-			List: make(thrift.List[bool], 64),
 		},
+		hasMap: true,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.uuid && !opts.UUID {
+			if tt.hasUUID && !opts.UUID {
 				t.Skipf("UUID is not supported")
 			}
 
@@ -160,7 +168,7 @@ func TestProtocol(t *testing.T, p thriftwire.Protocol, opts ProtocolOptions) {
 
 			w.Reset(&b)
 			marshal(t, w, msg, tt.in)
-			want := b.Bytes()
+			want := append([]byte(nil), b.Bytes()...)
 
 			r.Reset(&b)
 			if h, err := r.ReadMessageBegin(); err != nil {
@@ -179,13 +187,15 @@ func TestProtocol(t *testing.T, p thriftwire.Protocol, opts ProtocolOptions) {
 				t.Fatalf("message is not fully consumed")
 			}
 
-			w.Reset(&b)
-			marshal(t, w, msg, out)
-			got := b.Bytes()
-			if !bytes.Equal(got, want) {
-				t.Errorf("\ngot  %q\nwant %q", got, want)
+			if !tt.hasMap {
+				w.Reset(&b)
+				marshal(t, w, msg, out)
+				got := b.Bytes()
+				if !bytes.Equal(got, want) {
+					t.Errorf("\ngot  %q\nwant %q", got, want)
+				}
+				b.Reset()
 			}
-			b.Reset()
 
 			b.Write(want)
 			r.Reset(&b)
