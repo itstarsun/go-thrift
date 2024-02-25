@@ -282,6 +282,14 @@ func (x *reader) readSize() (int, error) {
 	return int(v), err
 }
 
+func (x *reader) Reset(r io.Reader) {
+	x.Reader.Reset(r)
+	*x = reader{
+		Reader:       bufio.NewReader(r),
+		lastFieldIDs: x.lastFieldIDs[:0],
+	}
+}
+
 type writer struct {
 	*bufio.Writer
 	uw           io.Writer
@@ -520,7 +528,10 @@ func (x *writer) Flush() error {
 
 func (x *writer) Reset(uw io.Writer) {
 	x.Writer.Reset(uw)
-	x.uw = uw
+	*x = writer{
+		Writer:       x.Writer,
+		lastFieldIDs: x.lastFieldIDs[:0],
+	}
 }
 
 func appendWrite[IN any](x *writer, max int, f func([]byte, IN) ([]byte, error), in IN) error {
