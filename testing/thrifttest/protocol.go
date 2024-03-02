@@ -196,25 +196,27 @@ func TestProtocol(t *testing.T, p thriftwire.Protocol, opts ProtocolOptions) {
 			}
 
 			if !tt.hasMap {
-				w.Reset(&b)
-				marshal(t, w, msg, out)
-				got := b.Bytes()
-				if !bytes.Equal(got, want) {
-					t.Errorf("\ngot  %q\nwant %q", got, want)
+				for i := 0; i < 3; i++ {
+					b.Reset()
+					marshal(t, w, msg, out)
+					if got := b.Bytes(); !bytes.Equal(got, want) {
+						t.Errorf("\ngot  %q\nwant %q", got, want)
+					}
 				}
-				b.Reset()
 			}
 
-			b.Write(want)
 			r.Reset(&b)
-			if _, err := r.ReadMessageBegin(); err != nil {
-				t.Fatal(err)
-			}
-			if err := thriftwire.Skip(r, thriftwire.Struct); err != nil {
-				t.Fatal(err)
-			}
-			if err := r.ReadMessageEnd(); err != nil {
-				t.Fatal(err)
+			for i := 0; i < 3; i++ {
+				b.Write(want)
+				if _, err := r.ReadMessageBegin(); err != nil {
+					t.Fatal(err)
+				}
+				if err := thriftwire.Skip(r, thriftwire.Struct); err != nil {
+					t.Fatal(err)
+				}
+				if err := r.ReadMessageEnd(); err != nil {
+					t.Fatal(err)
+				}
 			}
 			b.Reset()
 		})
