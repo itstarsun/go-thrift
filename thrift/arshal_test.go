@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/itstarsun/go-thrift/internal/thriftmemo"
@@ -11,19 +12,6 @@ import (
 
 func ptr[T any](v T) *T {
 	return &v
-}
-
-func slicesEqual[S ~[]E, E comparable](s1, s2 S) bool {
-	// TODO(go1.21): Use slices.Equal.
-	if len(s1) != len(s2) {
-		return false
-	}
-	for i := range s1 {
-		if s1[i] != s2[i] {
-			return false
-		}
-	}
-	return true
 }
 
 type aStruct struct {
@@ -164,7 +152,7 @@ func TestArshaler(t *testing.T) {
 			}
 
 			write := m.Steps()
-			if !slicesEqual(write, tt.steps[:n]) {
+			if !slices.Equal(write, tt.steps[:n]) {
 				t.Fatalf("\ngot  %v\nwant %v", write, tt.steps[:n])
 			}
 
@@ -188,7 +176,7 @@ func TestArshaler(t *testing.T) {
 			}
 
 			read := m.Steps()[len(write):]
-			if !slicesEqual(read, write) {
+			if !slices.Equal(read, write) {
 				t.Errorf("\ngot  %v\nwant %v", read, write)
 			}
 		}

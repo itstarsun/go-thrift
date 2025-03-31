@@ -63,11 +63,3 @@ func ReadBytes(b *bufio.Reader, n int, buf []byte) ([]byte, error) {
 	}
 	return buf, nil
 }
-
-func min(x, y int) int {
-	// TODO(go1.21): Use the min built-in function.
-	if x < y {
-		return x
-	}
-	return y
-}
