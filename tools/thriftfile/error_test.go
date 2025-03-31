@@ -61,12 +61,13 @@ func expectedErrors(fset *gotoken.FileSet, filename string, src []byte) map[goto
 			x := errRx.FindStringSubmatch(s.lit())
 			if len(x) == 3 {
 				pos := s.pos
-				if x[1] == "HERE" {
-					pos = here // start of comment
-				} else if x[1] == "AFTER" {
-					pos += gotoken.Pos(len(s.lit())) // end of comment
-				} else {
-					pos = prev // token prior to comment
+				switch x[1] {
+				case "HERE":
+					pos = here
+				case "AFTER":
+					pos += gotoken.Pos(len(s.lit()))
+				default:
+					pos = prev
 				}
 				errors[pos] = x[2]
 			}

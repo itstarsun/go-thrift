@@ -1,7 +1,13 @@
-linters-settings:
-  gofumpt:
-    extra-rules: true
-
+version: "2"
 linters:
+  exclusions:
+    rules:
+      - linters:
+          - staticcheck
+        text: ST1005
+formatters:
   enable:
     - gofumpt
+  settings:
+    gofumpt:
+      extra-rules: true
