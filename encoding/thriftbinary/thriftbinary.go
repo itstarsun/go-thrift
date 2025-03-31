@@ -35,6 +35,10 @@ func (protocol) NewWriter(w io.Writer) thriftwire.Writer {
 	return newWriter(w, true)
 }
 
+func (protocol) String() string {
+	return "thriftbinary.Protocol"
+}
+
 type protocolNonStrict struct{}
 
 func (protocolNonStrict) NewReader(r io.Reader) thriftwire.Reader {
@@ -43,6 +47,10 @@ func (protocolNonStrict) NewReader(r io.Reader) thriftwire.Reader {
 
 func (protocolNonStrict) NewWriter(w io.Writer) thriftwire.Writer {
 	return newWriter(w, false)
+}
+
+func (protocolNonStrict) String() string {
+	return "thriftbinary.ProtocolNonStrict"
 }
 
 var (

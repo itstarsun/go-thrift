@@ -31,6 +31,10 @@ func (protocol) NewWriter(w io.Writer) thriftwire.Writer {
 	return &writer{Writer: bufio.NewWriter(w), uw: w}
 }
 
+func (protocol) String() string {
+	return "thriftcompact.Protocol"
+}
+
 type reader struct {
 	*bufio.Reader
 	lastFieldIDs []int16

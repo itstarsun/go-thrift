@@ -1,6 +1,9 @@
 package thriftwire
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 // Protocol is the interface that defines methods for creating [Reader] and [Writer].
 //
@@ -22,6 +25,9 @@ type joinedProtocol struct{ r, w Protocol }
 
 func (p joinedProtocol) NewReader(r io.Reader) Reader { return p.r.NewReader(r) }
 func (p joinedProtocol) NewWriter(w io.Writer) Writer { return p.w.NewWriter(w) }
+func (p joinedProtocol) String() string {
+	return fmt.Sprintf("thriftwire.JoinProtocol(%v, %v)", p.r, p.w)
+}
 
 // Reader is the interface that defines methods for reading Thrift values.
 //
